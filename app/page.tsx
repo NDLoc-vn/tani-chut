@@ -44,10 +44,16 @@ export default function Home() {
   const handleImageClick = async () => {
     setLocalCounter((prevCounter) => prevCounter + 1);
     setGlobalCounter((prevCounter) => prevCounter + 1);
+
     const response = await fetch("/api/counter", {
       method: "POST",
     });
-    const data = await response.json();
+
+    const audioResponse = await fetch("/api/random-sound");
+    const audioBlob = await audioResponse.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
   };
 
   return (
