@@ -45,8 +45,8 @@ export default function Home() {
     setLocalCounter((prevCounter) => prevCounter + 1);
     setGlobalCounter((prevCounter) => prevCounter + 1);
 
-    const randomParam = `?random=${Math.random()}`;
-    const audioResponse = await fetch(`/api/random-sound${randomParam}`);
+    const file = `?file=moa-${Math.floor(Math.random() * 18) + 1}.mp3`;
+    const audioResponse = await fetch(`/api/random-sound${file}`);
     const audioBlob = await audioResponse.blob();
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
