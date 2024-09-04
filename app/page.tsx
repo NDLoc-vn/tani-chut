@@ -88,9 +88,13 @@ export default function Home() {
         </a>
       </p>
       <p className="text-xs mt-1 text-gray-900">
-        Made by{" "}
-        <a href="" className="">
-          Y_Chan
+        Created by{" "}
+        <a href="https://x.com/YChan4383/status/1831346823556223151">Y_Chan</a>
+      </p>
+      <p className="fixed bottom-2 text-xs text-gray-500">
+        Idea from{" "}
+        <a href="https://faunaraara.com/" className="underline">
+          faunaraara.com
         </a>
       </p>
     </main>
