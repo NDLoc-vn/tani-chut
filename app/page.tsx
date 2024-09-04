@@ -45,15 +45,17 @@ export default function Home() {
     setLocalCounter((prevCounter) => prevCounter + 1);
     setGlobalCounter((prevCounter) => prevCounter + 1);
 
-    const response = await fetch("/api/counter", {
-      method: "POST",
-    });
-
-    const audioResponse = await fetch("/api/random-sound");
+    const randomParam = `?random=${Math.random()}`;
+    const audioResponse = await fetch(`/api/random-sound${randomParam}`);
     const audioBlob = await audioResponse.blob();
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     audio.play();
+
+    const response = await fetch("/api/counter", {
+      method: "POST",
+    });
+    const data = await response.json();
   };
 
   return (
