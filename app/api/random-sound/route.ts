@@ -13,6 +13,7 @@ export async function GET() {
   return new NextResponse(fileBuffer, {
     headers: {
       "Content-Type": "audio/mpeg",
+      "Cache-control": "no-store",
     },
   });
 }
