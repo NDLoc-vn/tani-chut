@@ -1,19 +1,59 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [globalCounter, setGlobalCounter] = useState(0);
+  const [targetCounter, setTargetCounter] = useState(0);
   const [localCounter, setLocalCounter] = useState(0);
 
-  const handleImageClick = () => {
-    setGlobalCounter(globalCounter + 1);
-    setLocalCounter(localCounter + 1);
+  useEffect(() => {
+    const fetchCounter = async () => {
+      const response = await fetch("/api/counter");
+      const data = await response.json();
+      setGlobalCounter(data.count);
+      setTargetCounter(data.count);
+    };
+
+    fetchCounter();
+    const intervalId = setInterval(async () => {
+      const response = await fetch("/api/counter");
+      const data = await response.json();
+      setTargetCounter(data.count);
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (globalCounter < targetCounter) {
+      const incrementId = setInterval(() => {
+        setGlobalCounter((prevCounter) => {
+          if (prevCounter < targetCounter) {
+            return prevCounter + 1;
+          } else {
+            clearInterval(incrementId);
+            return prevCounter;
+          }
+        });
+      }, 20);
+      return () => clearInterval(incrementId);
+    }
+  }, [targetCounter]);
+
+  const handleImageClick = async () => {
+    setLocalCounter((prevCounter) => prevCounter + 1);
+    setGlobalCounter((prevCounter) => prevCounter + 1);
+    const response = await fetch("/api/counter", {
+      method: "POST",
+    });
+    const data = await response.json();
   };
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen overflow-hidden">
       <h1 className="text-6xl">
-        <strong>{globalCounter}</strong>
+        <strong>{globalCounter.toLocaleString()}</strong>
       </h1>
       <p className="mb-16">Global Chụt Counter</p>
       <Image
