@@ -46,16 +46,27 @@ export default function Home() {
     setGlobalCounter((prevCounter) => prevCounter + 1);
 
     const file = `?file=moa-${Math.floor(Math.random() * 18) + 1}.mp3`;
-    const audioResponse = await fetch(`/api/random-sound${file}`);
-    const audioBlob = await audioResponse.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play();
+    const url = `/api/random-sound${file}`;
 
-    const response = await fetch("/api/counter", {
+    const cache = await caches.open("sound-cache");
+    const cachedResponse = await cache.match(url);
+    if (cachedResponse) {
+      const audioBlob = await cachedResponse.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } else {
+      const audioResponse = await fetch(url);
+      const audioBlob = await audioResponse.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      cache.put(url, new Response(audioBlob));
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
+
+    await fetch("/api/counter", {
       method: "POST",
     });
-    const data = await response.json();
   };
 
   return (
