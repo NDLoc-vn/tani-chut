@@ -18,6 +18,7 @@ export async function GET(req: Request) {
   return new NextResponse(fileBuffer, {
     headers: {
       "Content-Type": "audio/mpeg",
+      "Cache-Control": "public, max-age=3600, must-revalidate",
     },
   });
 }
