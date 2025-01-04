@@ -16,4 +16,9 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  .break-works {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
 }
