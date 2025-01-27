@@ -9,6 +9,7 @@ type Video = {
   thumbnail: string;
   scheduledStartTime?: string;
   isLiveNow: boolean;
+  isShorts: boolean;
 };
 
 export default function VideoGallery() {
@@ -28,15 +29,17 @@ export default function VideoGallery() {
         }
         const data = await response.json();
 
-        const formattedVideos = data.map((video: any) => ({
-          id: video.id,
-          title: video.snippet.title,
-          thumbnail: video.snippet.thumbnails.high.url,
-          scheduledStartTime: video.liveStreamingDetails?.scheduledStartTime,
-          isLiveNow:
-            !!video.liveStreamingDetails?.actualStartTime &&
-            !video.liveStreamingDetails?.actualEndTime,
-        }));
+        // Sử dụng trực tiếp trường thumbnail từ dữ liệu trả về
+        const formattedVideos = data.map((video: any) => {
+          return {
+            id: video.id,
+            title: video.title,
+            thumbnail: video.thumbnail, // Trực tiếp lấy thumbnail từ dữ liệu
+            scheduledStartTime: video.scheduledStartTime,
+            isLiveNow: video.isLiveNow,
+            isShorts: video.isShorts,
+          };
+        });
 
         setVideos(formattedVideos);
       } catch (err: any) {
@@ -69,7 +72,7 @@ export default function VideoGallery() {
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto pl-2 pr-2">
       <div className="w-full flex justify-start mb-2">
-        <p className="text-sm text-gray-700">Next Stream:</p>
+        <p className="text-sm font-semibold">Next Stream / Newest Shorts:</p>
       </div>
       <div className="relative overflow-hidden w-full">
         <div
@@ -89,7 +92,7 @@ export default function VideoGallery() {
                 <img
                   src={video.thumbnail}
                   alt={video.title}
-                  className="h-28 w-auto rounded-lg cursor-pointer mx-auto"
+                  className="h-32 w-auto rounded-lg cursor-pointer mx-auto"
                 />
                 <h2 className="mt-2 text-sm font-semibold pl-4 pr-4">
                   {video.title}
@@ -97,6 +100,8 @@ export default function VideoGallery() {
               </Link>
               {video.isLiveNow ? (
                 <p className="text-red-500 font-bold">Live Now</p>
+              ) : video.isShorts ? (
+                <p className="text-blue-500 font-bold">Shorts</p>
               ) : (
                 <p className="text-gray-500 text-xs">
                   Scheduled:{" "}
@@ -109,7 +114,7 @@ export default function VideoGallery() {
           ))}
         </div>
       </div>
-      <div className="flex justify-between w-full mt-2">
+      <div className="flex justify-between w-full mt-1">
         <button
           onClick={() =>
             setCurrentPage((prevPage) => Math.max(prevPage - 1, 0))

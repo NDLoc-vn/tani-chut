@@ -1,80 +1,78 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const apiKey = process.env.NEXT_YOUTUBE_API_KEY;
-  const channelId = process.env.NEXT_YOUTUBE_CHANNEL_ID;
-
-  if (!apiKey || !channelId) {
-    return NextResponse.json(
-      { error: "API key or Channel ID is missing" },
-      { status: 400 }
-    );
-  }
+  const YOUTUBE_API_KEY = process.env.NEXT_YOUTUBE_API_KEY;
+  const CHANNEL_ID = process.env.NEXT_YOUTUBE_CHANNEL_ID;
+  const PLAYLIST_ID = `UU${CHANNEL_ID?.slice(2)}`;
+  const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=5&key=${YOUTUBE_API_KEY}`;
 
   try {
-    const upcomingVideosResponse = await fetch(
-      `https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=upcoming&type=video&key=${apiKey}`
-    );
-
-    const upcomingVideosData = await upcomingVideosResponse.json();
-
-    if (!upcomingVideosData.items || upcomingVideosData.items.length === 0) {
-      return NextResponse.json(
-        { error: "No live or upcoming videos found" },
-        { status: 404 }
-      );
+    const response = await fetch(API_URL);
+    if (!response.ok) {
+      throw new Error("Failed to fetch playlist items");
     }
 
-    // const allVideos = [...upcomingVideosData.items];
+    const data = await response.json();
 
-    const videoIds = upcomingVideosData.items
-      .map((video: any) => video.id.videoId)
-      .join(",");
-    const detailedVideosResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${videoIds}&key=${apiKey}`
+    // Lấy thông tin chi tiết từng video từ API /videos
+    const videos = await Promise.all(
+      data.items.map(async (item: any) => {
+        const videoId = item.snippet.resourceId.videoId;
+
+        // Lấy thông tin live streaming details
+        const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,contentDetails&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+        const detailsResponse = await fetch(detailsUrl);
+        const detailsData = await detailsResponse.json();
+
+        const liveDetails = detailsData.items?.[0]?.liveStreamingDetails || {};
+        const contentDetails = detailsData.items?.[0]?.contentDetails || {};
+
+        // Phân loại video (shorts, upcoming, live)
+        const duration = contentDetails.duration || "";
+        const isShorts = /PT[0-9]{1,2}S/.test(duration); // Shorts có duration <= 60 giây
+
+        return {
+          id: videoId,
+          title: item.snippet.title,
+          thumbnail: item.snippet.thumbnails.high.url,
+          scheduledStartTime: liveDetails.scheduledStartTime || null,
+          actualStartTime: liveDetails.actualStartTime || null,
+          actualEndTime: liveDetails.actualEndTime || null,
+          isLiveNow:
+            !!liveDetails.actualStartTime && !liveDetails.actualEndTime, // Đang live nếu có actualStartTime và chưa có actualEndTime
+          isShorts, // true nếu là shorts
+        };
+      })
     );
-    const detailedVideosData = await detailedVideosResponse.json();
 
-    if (!detailedVideosData.items || detailedVideosData.items.length === 0) {
-      return NextResponse.json(
-        { error: "No detailed video information found" },
-        { status: 404 }
-      );
-    }
+    // Lọc video đang live và sắp phát (loại bỏ những video đã kết thúc)
+    const upcomingAndLiveVideos = videos.filter(
+      (video) =>
+        // Giữ lại video live đang phát hoặc video sắp phát
+        (video.isLiveNow && !video.actualEndTime) ||
+        (video.scheduledStartTime && !video.actualStartTime)
+    );
 
-    const filteredVideos = detailedVideosData.items.filter((video: any) => {
-      const liveDetails = video.liveStreamingDetails;
-      return !liveDetails?.actualEndTime;
-    });
+    // Lọc video shorts và lấy chỉ video mới nhất
+    const latestShort = videos
+      .filter((video) => video.isShorts)
+      .sort(
+        (a, b) =>
+          new Date(b.scheduledStartTime || 0).getTime() -
+          new Date(a.scheduledStartTime || 0).getTime()
+      )[0];
 
-    const sortedVideos = filteredVideos.sort((a: any, b: any) => {
-      const aLiveDetails = a.liveStreamingDetails;
-      const bLiveDetails = b.liveStreamingDetails;
+    // Kết hợp tất cả video live, upcoming và 1 video shorts mới nhất
+    const finalVideos = [
+      ...upcomingAndLiveVideos,
+      latestShort ? latestShort : null,
+    ].filter(Boolean); // Loại bỏ giá trị null và undefined
 
-      if (aLiveDetails?.actualStartTime && !aLiveDetails?.actualEndTime) {
-        return -1;
-      } else if (
-        bLiveDetails?.actualStartTime &&
-        !bLiveDetails?.actualEndTime
-      ) {
-        return 1;
-      }
-
-      const aScheduledStartTime = aLiveDetails?.scheduledStartTime
-        ? new Date(aLiveDetails.scheduledStartTime).getTime()
-        : Infinity;
-      const bScheduledStartTime = bLiveDetails?.scheduledStartTime
-        ? new Date(bLiveDetails.scheduledStartTime).getTime()
-        : Infinity;
-
-      return aScheduledStartTime - bScheduledStartTime;
-    });
-
-    return NextResponse.json(sortedVideos);
-  } catch (err) {
-    console.error("Error fetching YouTube data:", err);
+    return NextResponse.json(finalVideos);
+  } catch (error: any) {
+    console.error("Error fetching playlist videos:", error.message);
     return NextResponse.json(
-      { error: "Failed to fetch YouTube data" },
+      { error: "Failed to fetch playlist videos" },
       { status: 500 }
     );
   }

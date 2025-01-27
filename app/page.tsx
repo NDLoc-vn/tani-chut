@@ -76,7 +76,7 @@ export default function Home() {
         <h1 className="text-6xl">
           <strong>{globalCounter.toLocaleString()}</strong>
         </h1>
-        <p className="mb-16">Global Chụt Counter</p>
+        <p className="mb-10">Global Chụt Counter</p>
         <Image
           src="/tani-chut.gif"
           alt="Tani kiss gif"
