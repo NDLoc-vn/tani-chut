@@ -7,7 +7,7 @@ export async function GET() {
   const API_URL = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=5&key=${YOUTUBE_API_KEY}`;
 
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, { next: { revalidate: 300 } });
     if (!response.ok) {
       throw new Error("Failed to fetch playlist items");
     }
@@ -44,6 +44,8 @@ export async function GET() {
         };
       })
     );
+
+    console.log(videos);
 
     // Lọc video đang live và sắp phát (loại bỏ những video đã kết thúc)
     const upcomingAndLiveVideos = videos.filter(

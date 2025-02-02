@@ -7,6 +7,9 @@ export default function Home() {
   const [globalCounter, setGlobalCounter] = useState(0);
   const [targetCounter, setTargetCounter] = useState(0);
   const [localCounter, setLocalCounter] = useState(0);
+  const [fallingImages, setFallingImages] = useState<
+    { id: number; src: string; x: number; y: number; delay: number }[]
+  >([]);
 
   useEffect(() => {
     const fetchCounter = async () => {
@@ -46,7 +49,25 @@ export default function Home() {
     setLocalCounter((prevCounter) => prevCounter + 1);
     setGlobalCounter((prevCounter) => prevCounter + 1);
 
-    const file = `?file=moa-${Math.floor(Math.random() * 18) + 1}.mp3`;
+    let file = "";
+    let imageSrc = "";
+    if (Math.floor(Math.random() * 2804) + 1 === 2804) {
+      file = "?file=moa-kaospinku.mp3";
+      imageSrc = "/kaospinku.png";
+    } else if (Math.floor(Math.random() * 2803) + 1 === 2803) {
+      file = "?file=moa-noro.mp3";
+      imageSrc = "/noro.png";
+    } else if (Math.floor(Math.random() * 2306) + 1 === 2306) {
+      file = "?file=moa-miducu.mp3";
+      imageSrc = "/miducu.png";
+    } else if (Math.floor(Math.random() * 607) + 1 === 607) {
+      file = "?file=moa-suwaa.mp3";
+      imageSrc = "/suwaa.png";
+    } else if (Math.floor(Math.random() * 201) + 1 === 201) {
+      file = "?file=moa-trake.mp3";
+      imageSrc = "/trake.png";
+    } else file = `?file=moa-${Math.floor(Math.random() * 32) + 1}.mp3`;
+
     const url = `/api/random-sound${file}`;
 
     const cache = await caches.open("sound-cache");
@@ -68,10 +89,43 @@ export default function Home() {
     await fetch("/api/counter", {
       method: "POST",
     });
+
+    if (imageSrc) {
+      const newImages = Array.from({ length: 200 }).map(() => ({
+        id: Math.random(),
+        src: imageSrc,
+        x: Math.random() * window.innerWidth - 40, // Vị trí ngẫu nhiên theo chiều ngang
+        y: -80, // Bắt đầu từ trên cùng
+        delay: Math.random() * 5,
+      }));
+
+      setFallingImages((prevImages) => [...prevImages, ...newImages]);
+
+      setTimeout(() => {
+        setFallingImages((prevImages) => prevImages.slice(newImages.length));
+      }, 9000); // Sau 5 giây loại bỏ ảnh rơi
+    }
   };
 
   return (
     <main className="flex flex-col items-center justify-between min-h-screen">
+      {/* Hiển thị hình ảnh rơi */}
+      {fallingImages.map((img) => (
+        <Image
+          key={img.id}
+          src={img.src}
+          alt="Falling image"
+          className="absolute"
+          width={40}
+          height={40}
+          style={{
+            left: img.x,
+            top: img.y,
+            animation: `fall-animation 5s linear ${img.delay}s forwards`,
+          }}
+        />
+      ))}
+
       <div className="flex flex-col items-center justify-center flex-1">
         <h1 className="text-6xl">
           <strong>{globalCounter.toLocaleString()}</strong>
@@ -117,6 +171,20 @@ export default function Home() {
           </a>
         </p>
       </div>
+
+      {/* CSS cho animation rơi xuống */}
+      <style jsx>{`
+        @keyframes fall-animation {
+          from {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateY(100vh);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </main>
   );
 }
