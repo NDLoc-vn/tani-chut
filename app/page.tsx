@@ -66,7 +66,7 @@ export default function Home() {
     } else if (Math.floor(Math.random() * 201) + 1 === 201) {
       file = "?file=moa-trake.mp3";
       imageSrc = "/trake.png";
-    } else file = `?file=moa-${Math.floor(Math.random() * 32) + 1}.mp3`;
+    } else file = `?file=moa-${Math.floor(Math.random() * 33) + 1}.mp3`;
 
     const url = `/api/random-sound${file}`;
 
